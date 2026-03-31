@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌌 Stellar Anomaly Hunter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" />
+  <link rel="stylesheet" href="index.css" />
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">🌌</span>
+        <div>
+          <h1>Stellar Anomaly Hunter</h1>
+          <p>Self-improving ZTF light curve anomaly detector</p>
+        </div>
+      </div>
+      <div class="header-stats" id="header-stats">
+        <div class="stat-pill"><span id="stat-total">—</span> objects</div>
+        <div class="stat-pill flagged"><span id="stat-flagged">—</span> flagged</div>
+        <div class="stat-pill discover"><span id="stat-discoveries">—</span> discoveries</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="tabs">
+    <button class="tab active" data-tab="review">🚨 Review</button>
+    <button class="tab" data-tab="classified">🏷️ Auto-Classified</button>
+    <button class="tab" data-tab="dismissed">📦 Dismissed</button>
+    <button class="tab" data-tab="discoveries">🌟 Discoveries</button>
+    <button class="tab" data-tab="stats">📊 Stats</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- REVIEW TAB -->
+    <section class="tab-content active" id="tab-review">
+      <div class="section-header">
+        <h2>🚨 Objects Flagged for Human Review</h2>
+        <p>These are the most anomalous objects the AI couldn't classify. Review and give feedback.</p>
+      </div>
+      <div id="flagged-list" class="object-grid"></div>
+      <div id="flagged-empty" class="empty-state" style="display:none">
+        <span>🎉</span>
+        <p>All objects reviewed! Nothing flagged.</p>
+      </div>
+    </section>
+
+    <!-- CLASSIFIED TAB -->
+    <section class="tab-content" id="tab-classified">
+      <div class="section-header">
+        <h2>🏷️ Auto-Classified Objects</h2>
+        <p>AI matched these to known variable star classes. Correct if wrong.</p>
+      </div>
+      <div id="classified-list" class="object-table-wrap">
+        <table class="object-table" id="classified-table">
+          <thead>
+            <tr>
+              <th>OID</th>
+              <th>Auto Class</th>
+              <th>Score</th>
+              <th>Distance</th>
+              <th>RA</th>
+              <th>Dec</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="classified-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DISMISSED TAB -->
+    <section class="tab-content" id="tab-dismissed">
+      <div class="section-header">
+        <h2>📦 Auto-Dismissed Objects</h2>
+        <p>AI dismissed these as noise. Browse anytime — nothing is deleted.</p>
+        <button class="btn btn-secondary" onclick="triggerRescan()">🔄 Run Retrospective Rescan</button>
+      </div>
+      <div id="rescan-status" class="rescan-banner" style="display:none"></div>
+      <div id="dismissed-list" class="object-table-wrap">
+        <table class="object-table">
+          <thead>
+            <tr>
+              <th>OID</th>
+              <th>Score</th>
+              <th>Reason</th>
+              <th>N Det</th>
+              <th>Promote</th>
+            </tr>
+          </thead>
+          <tbody id="dismissed-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DISCOVERIES TAB -->
+    <section class="tab-content" id="tab-discoveries">
+      <div class="section-header">
+        <h2>🌟 Discovery Log</h2>
+        <p>Objects you confirmed as genuinely interesting.</p>
+      </div>
+      <div id="discoveries-list" class="object-grid discoveries-grid"></div>
+      <div id="discoveries-empty" class="empty-state" style="display:none">
+        <span>🔭</span>
+        <p>No confirmed discoveries yet. Keep reviewing!</p>
+      </div>
+    </section>
+
+    <!-- STATS TAB -->
+    <section class="tab-content" id="tab-stats">
+      <div class="section-header">
+        <h2>📊 Session Statistics</h2>
+      </div>
+      <div class="stats-grid">
+        <div class="stats-card">
+          <div class="stats-number" id="s-total">—</div>
+          <div class="stats-label">Total Scored</div>
+        </div>
+        <div class="stats-card flagged">
+          <div class="stats-number" id="s-flagged">—</div>
+          <div class="stats-label">🚨 Flagged</div>
+        </div>
+        <div class="stats-card classified">
+          <div class="stats-number" id="s-classified">—</div>
+          <div class="stats-label">🏷️ Classified</div>
+        </div>
+        <div class="stats-card dismissed">
+          <div class="stats-number" id="s-dismissed">—</div>
+          <div class="stats-label">📦 Dismissed</div>
+        </div>
+        <div class="stats-card discover">
+          <div class="stats-number" id="s-discoveries">—</div>
+          <div class="stats-label">🌟 Discoveries</div>
+        </div>
+        <div class="stats-card feedback">
+          <div class="stats-number" id="s-feedback">—</div>
+          <div class="stats-label">💬 Feedback Given</div>
+        </div>
+      </div>
+      <div style="margin-top:1.5rem;display:flex;gap:0.8rem;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="triggerRetrain()">🧠 Retrain AI</button>
+      </div>
+      <div id="retrain-status" class="rescan-banner" style="display:none;margin-top:1rem"></div>
+    </section>
+  </main>
+
+  <!-- Object Detail Modal -->
+  <div id="modal-overlay" class="modal-overlay" style="display:none">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- Feedback Toast -->
+  <div id="toast" class="toast" style="display:none"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="index.js"></script>
+</body>
+
+</html>

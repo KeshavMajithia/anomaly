@@ -1,0 +1,317 @@
+/* ── index.js — Stellar Anomaly Hunter Dashboard ─────────────────────── */
+const API = 'http://127.0.0.1:5000/api';
+
+// ── Tabs ──────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+        if (tab.dataset.tab === 'classified') loadClassified();
+        if (tab.dataset.tab === 'dismissed') loadDismissed();
+        if (tab.dataset.tab === 'discoveries') loadDiscoveries();
+        if (tab.dataset.tab === 'stats') loadStats();
+    });
+});
+
+// ── Utils ─────────────────────────────────────────────────────────────
+function scoreClass(s) {
+    if (s >= 0.7) return 'score-high';
+    if (s >= 0.4) return 'score-med';
+    return 'score-low';
+}
+
+function fmt(v, d = 4) {
+    return v === null || v === undefined || isNaN(v) ? '—' : Number(v).toFixed(d);
+}
+
+function showToast(msg, color = '#818cf8') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    t.style.borderColor = color;
+    t.style.color = color;
+    setTimeout(() => { t.style.display = 'none'; }, 3000);
+}
+
+// ── Feedback ─────────────────────────────────────────────────────────
+async function sendFeedback(oid, action, label = null, cardEl = null) {
+    const payload = { oid, action };
+    if (label) payload.label = label;
+
+    try {
+        const r = await fetch(`${API}/feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await r.json();
+
+        const icons = { interesting: '🌟', noise: '🚫', classify: '🏷️' };
+        showToast(`${icons[action] || '✅'} ${data.message}`,
+            action === 'interesting' ? '#86efac' :
+                action === 'noise' ? '#94a3b8' : '#818cf8');
+
+        if (cardEl) {
+            cardEl.style.opacity = '0.4';
+            cardEl.style.pointerEvents = 'none';
+            setTimeout(() => cardEl.remove(), 800);
+        }
+        // Refresh stats
+        loadHeaderStats();
+    } catch (e) {
+        showToast('⚠️ Error sending feedback', '#ef4444');
+    }
+}
+
+// ── Classify dialog ───────────────────────────────────────────────────
+const CLASSES = ['E', 'BYDra', 'RSCVN', 'LPV', 'RRL', 'DSCT', 'Other'];
+
+function classifyPopup(oid, cardEl) {
+    const label = prompt(
+        `Classify ${oid}:\n\n${CLASSES.join(', ')}\n\nEnter class name:`, 'E');
+    if (label) sendFeedback(oid, 'classify', label, cardEl);
+}
+
+// ── Object card ───────────────────────────────────────────────────────
+function buildCard(obj, showFeedback = true) {
+    const card = document.createElement('div');
+    card.className = `obj-card triage-${obj.triage || 'flagged'}`;
+    card.id = `card-${obj.oid}`;
+
+    const simbad = obj.simbad_match
+        ? `<div class="simbad-badge simbad-yes">✅ ${obj.simbad_match} (${obj.simbad_otype || '?'})</div>`
+        : (obj.score >= 0.5
+            ? `<div class="simbad-badge simbad-no">❌ NO SIMBAD MATCH</div>`
+            : '');
+
+    const fb = showFeedback ? `
+    <div class="feedback-buttons">
+      <button class="btn btn-interesting" onclick="sendFeedback('${obj.oid}','interesting',null,document.getElementById('card-${obj.oid}'))">
+        🌟 Interesting
+      </button>
+      <button class="btn btn-noise" onclick="sendFeedback('${obj.oid}','noise',null,document.getElementById('card-${obj.oid}'))">
+        🚫 Noise
+      </button>
+      <button class="btn btn-classify" onclick="classifyPopup('${obj.oid}',document.getElementById('card-${obj.oid}'))">
+        🏷️ Classify
+      </button>
+    </div>` : '';
+
+    card.innerHTML = `
+    <div class="obj-header">
+      <div class="obj-oid">${obj.oid}</div>
+      <span class="score-badge ${scoreClass(obj.score)}">${fmt(obj.score, 4)}</span>
+    </div>
+    <div class="obj-meta">
+      <div class="meta-item"><b>RA</b> ${fmt(obj.ra, 4)}°</div>
+      <div class="meta-item"><b>Dec</b> ${fmt(obj.dec, 4)}°</div>
+      <div class="meta-item"><b>Detections</b> ${obj.n_detections ?? '—'}</div>
+      <div class="meta-item"><b>Mag</b> ${fmt(obj.mag_mean, 2)}</div>
+    </div>
+    ${obj.triage_reason ? `<div class="obj-reason">📋 ${obj.triage_reason}</div>` : ''}
+    ${simbad}
+    ${fb}
+  `;
+    card.addEventListener('click', (e) => {
+        if (!e.target.closest('.btn')) openModal(obj);
+    });
+    return card;
+}
+
+// ── REVIEW tab ────────────────────────────────────────────────────────
+async function loadFlagged() {
+    const list = document.getElementById('flagged-list');
+    const empty = document.getElementById('flagged-empty');
+    list.innerHTML = '<div style="color:var(--text-3);padding:1rem">Loading...</div>';
+
+    const data = await fetch(`${API}/flagged?limit=50`).then(r => r.json()).catch(() => []);
+    list.innerHTML = '';
+
+    if (!data.length) {
+        list.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+    }
+
+    list.style.display = 'grid';
+    empty.style.display = 'none';
+    data.forEach(obj => list.appendChild(buildCard(obj, true)));
+}
+
+// ── CLASSIFIED tab ────────────────────────────────────────────────────
+async function loadClassified() {
+    const tbody = document.getElementById('classified-tbody');
+    tbody.innerHTML = '';
+    const data = await fetch(`${API}/objects?triage=classified&limit=200`).then(r => r.json()).catch(() => []);
+
+    data.forEach(obj => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+      <td class="mono">${obj.oid}</td>
+      <td><span class="score-badge score-low">${obj.auto_class || '?'}</span></td>
+      <td>${fmt(obj.score, 3)}</td>
+      <td>${fmt(obj.class_distance, 3)}</td>
+      <td>${fmt(obj.ra, 4)}</td>
+      <td>${fmt(obj.dec, 4)}</td>
+      <td><button class="btn btn-classify" style="padding:0.25rem 0.6rem;font-size:0.75rem"
+          onclick="classifyPopup('${obj.oid}',null)">Correct</button></td>
+    `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ── DISMISSED tab ─────────────────────────────────────────────────────
+async function loadDismissed() {
+    const tbody = document.getElementById('dismissed-tbody');
+    tbody.innerHTML = '';
+    const data = await fetch(`${API}/dismissed?limit=200`).then(r => r.json()).catch(() => []);
+
+    data.forEach(obj => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+      <td class="mono" style="cursor:pointer;color:var(--accent-2)" onclick="openModalById('${obj.oid}')">${obj.oid}</td>
+      <td>${fmt(obj.score, 3)}</td>
+      <td style="color:var(--text-3);font-size:0.78rem">${obj.triage_reason || '—'}</td>
+      <td>${obj.n_detections ?? '—'}</td>
+      <td><button class="btn btn-interesting" style="padding:0.25rem 0.6rem;font-size:0.75rem"
+          onclick="sendFeedback('${obj.oid}','interesting',null,null)">↑ Promote</button></td>
+    `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ── DISCOVERIES tab ───────────────────────────────────────────────────
+async function loadDiscoveries() {
+    const list = document.getElementById('discoveries-list');
+    const empty = document.getElementById('discoveries-empty');
+    list.innerHTML = '';
+
+    const data = await fetch(`${API}/discoveries`).then(r => r.json()).catch(() => []);
+
+    if (!data.length) {
+        list.style.display = 'none';
+        empty.style.display = 'block';
+        return;
+    }
+    list.style.display = 'grid';
+    empty.style.display = 'none';
+    data.forEach(obj => {
+        const card = buildCard({ ...obj, triage: 'discover' }, false);
+        list.appendChild(card);
+    });
+}
+
+// ── STATS tab ─────────────────────────────────────────────────────────
+async function loadStats() {
+    const s = await fetch(`${API}/stats`).then(r => r.json()).catch(() => ({}));
+    document.getElementById('s-total').textContent = (s.total ?? 0).toLocaleString();
+    document.getElementById('s-flagged').textContent = (s.flagged ?? 0).toLocaleString();
+    document.getElementById('s-classified').textContent = (s.classified ?? 0).toLocaleString();
+    document.getElementById('s-dismissed').textContent = (s.dismissed ?? 0).toLocaleString();
+    document.getElementById('s-discoveries').textContent = (s.discoveries ?? 0).toLocaleString();
+    document.getElementById('s-feedback').textContent = (s.feedback ?? 0).toLocaleString();
+}
+
+// ── Header stats ──────────────────────────────────────────────────────
+async function loadHeaderStats() {
+    const s = await fetch(`${API}/stats`).then(r => r.json()).catch(() => ({}));
+    document.getElementById('stat-total').textContent = (s.total ?? 0).toLocaleString();
+    document.getElementById('stat-flagged').textContent = `${s.flagged ?? 0} flagged`;
+    document.getElementById('stat-discoveries').textContent = `${s.discoveries ?? 0} discoveries`;
+}
+
+// ── Rescan ────────────────────────────────────────────────────────────
+async function triggerRescan() {
+    const banner = document.getElementById('rescan-status');
+    banner.style.display = 'block';
+    banner.textContent = '🔄 Running retrospective rescan... (may take a few minutes)';
+
+    try {
+        const r = await fetch(`${API}/rescan`, { method: 'POST' });
+        const data = await r.json();
+        banner.textContent = `✅ Rescan complete. ${data.promoted ?? 0} objects promoted from dismissed to flagged.`;
+        if (data.promoted > 0) loadFlagged();
+    } catch (e) {
+        banner.textContent = '⚠️ Rescan failed. Is the model loaded?';
+    }
+}
+
+// ── Retrain ───────────────────────────────────────────────────────────
+async function triggerRetrain() {
+    const banner = document.getElementById('retrain-status');
+    banner.style.display = 'block';
+    banner.textContent = '🧠 Retraining AI from feedback + self-correction... (may take a minute)';
+
+    try {
+        const r = await fetch(`${API}/retrain`, { method: 'POST' });
+        const data = await r.json();
+        const parts = [];
+        if (data.feedback_clf_trained) parts.push('Feedback Classifier ✅');
+        if (data.iso_forest_trained) parts.push('Isolation Forest ✅');
+        if (data.stats?.n_samples) parts.push(`${data.stats.n_samples} training samples`);
+        banner.textContent = `✅ AI retrained! ${parts.join(' | ')}`;
+        banner.style.borderColor = '#22c55e';
+    } catch (e) {
+        banner.textContent = '⚠️ Retrain failed.';
+        banner.style.borderColor = '#ef4444';
+    }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────
+function openModal(obj) {
+    const content = document.getElementById('modal-content');
+    const simbadLine = obj.simbad_match
+        ? `<div class="simbad-badge simbad-yes">✅ ${obj.simbad_match} (${obj.simbad_otype || '?'})</div>`
+        : `<div class="simbad-badge simbad-no">❌ Not in SIMBAD</div>`;
+
+    content.innerHTML = `
+    <h3 style="font-size:1.1rem;margin-bottom:0.5rem">Object Detail</h3>
+    <div class="modal-oid">${obj.oid}</div>
+    ${simbadLine}
+    <div class="modal-meta-grid">
+      <div class="modal-meta-item"><label>Anomaly Score</label><span>${fmt(obj.score, 4)}</span></div>
+      <div class="modal-meta-item"><label>Triage</label><span>${obj.triage}</span></div>
+      <div class="modal-meta-item"><label>RA</label><span>${fmt(obj.ra, 6)}°</span></div>
+      <div class="modal-meta-item"><label>Dec</label><span>${fmt(obj.dec, 6)}°</span></div>
+      <div class="modal-meta-item"><label>Detections</label><span>${obj.n_detections ?? '—'}</span></div>
+      <div class="modal-meta-item"><label>Mean Mag</label><span>${fmt(obj.mag_mean, 3)}</span></div>
+      <div class="modal-meta-item"><label>Rec Error</label><span>${fmt(obj.rec_error, 5)}</span></div>
+      <div class="modal-meta-item"><label>kNN Dist</label><span>${fmt(obj.knn_dist, 5)}</span></div>
+    </div>
+    <div class="obj-reason" style="margin-bottom:1rem">📋 ${obj.triage_reason || 'No reason recorded'}</div>
+    <p style="font-size:0.8rem;color:var(--text-3);margin-bottom:1rem">
+      🔗 <a href="https://alerce.online/object/${obj.oid}" target="_blank" style="color:var(--accent-2)">View on ALeRCE →</a>
+      &nbsp;&nbsp;
+      🔗 <a href="http://simbad.u-strasbg.fr/simbad/sim-coo?Coord=${obj.ra}+${obj.dec}&Radius=5&Radius.unit=arcsec" target="_blank" style="color:var(--accent-2)">Query SIMBAD →</a>
+    </p>
+    <div class="feedback-buttons">
+      <button class="btn btn-interesting" onclick="sendFeedback('${obj.oid}','interesting');closeModal()">🌟 Mark Interesting</button>
+      <button class="btn btn-noise" onclick="sendFeedback('${obj.oid}','noise');closeModal()">🚫 Mark Noise</button>
+      <button class="btn btn-classify" onclick="classifyPopup('${obj.oid}',null);closeModal()">🏷️ Classify</button>
+    </div>
+  `;
+
+    document.getElementById('modal-overlay').style.display = 'flex';
+}
+
+async function openModalById(oid) {
+    const data = await fetch(`${API}/objects?triage=dismissed&limit=1000`).then(r => r.json()).catch(() => []);
+    const obj = data.find(o => o.oid === oid);
+    if (obj) openModal(obj);
+}
+
+function closeModal() {
+    document.getElementById('modal-overlay').style.display = 'none';
+}
+
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+    if (e.target.id === 'modal-overlay') closeModal();
+});
+
+// ── Initial load ──────────────────────────────────────────────────────
+(async function init() {
+    await loadHeaderStats();
+    await loadFlagged();
+})();
