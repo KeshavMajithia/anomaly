@@ -1,0 +1,146 @@
+[
+  {
+    "n_samples": 1317,
+    "n_positive": 7,
+    "n_negative": 1310,
+    "timestamp": "2026-03-04T01:15:20.463333"
+  },
+  {
+    "n_samples": 1314,
+    "n_positive": 6,
+    "n_negative": 1308,
+    "timestamp": "2026-03-04T01:23:58.818408"
+  },
+  {
+    "n_samples": 1314,
+    "n_positive": 6,
+    "n_negative": 1308,
+    "timestamp": "2026-03-04T01:29:30.620080"
+  },
+  {
+    "n_samples": 1314,
+    "n_positive": 6,
+    "n_negative": 1308,
+    "timestamp": "2026-03-04T01:31:21.321542"
+  },
+  {
+    "n_samples": 1315,
+    "n_positive": 6,
+    "n_negative": 1309,
+    "timestamp": "2026-03-04T02:30:28.726494"
+  },
+  {
+    "n_samples": 1315,
+    "n_positive": 6,
+    "n_negative": 1309,
+    "timestamp": "2026-03-04T02:31:09.150853"
+  },
+  {
+    "n_samples": 1315,
+    "n_positive": 6,
+    "n_negative": 1309,
+    "timestamp": "2026-03-05T02:28:59.595510"
+  },
+  {
+    "n_samples": 1321,
+    "n_positive": 7,
+    "n_negative": 1314,
+    "timestamp": "2026-03-05T15:05:31.050466"
+  },
+  {
+    "n_samples": 1322,
+    "n_positive": 8,
+    "n_negative": 1314,
+    "timestamp": "2026-03-05T15:51:56.041576"
+  },
+  {
+    "n_samples": 51,
+    "n_positive": 6,
+    "n_negative": 45,
+    "timestamp": "2026-03-05T16:10:40.733455"
+  },
+  {
+    "n_samples": 51,
+    "n_positive": 10,
+    "n_negative": 41,
+    "timestamp": "2026-03-05T16:16:41.113974"
+  },
+  {
+    "n_samples": 1254,
+    "n_positive": 8,
+    "n_negative": 1246,
+    "timestamp": "2026-03-05T16:33:36.173290"
+  },
+  {
+    "n_samples": 5702,
+    "n_positive": 32,
+    "n_negative": 5670,
+    "timestamp": "2026-03-05T23:58:47.676310"
+  },
+  {
+    "n_samples": 5773,
+    "n_positive": 99,
+    "n_negative": 5674,
+    "timestamp": "2026-03-06T00:52:43.618949"
+  },
+  {
+    "n_samples": 5773,
+    "n_positive": 99,
+    "n_negative": 5674,
+    "timestamp": "2026-03-06T00:52:59.142714"
+  },
+  {
+    "n_samples": 10514,
+    "n_positive": 125,
+    "n_negative": 10389,
+    "timestamp": "2026-03-06T23:37:37.385804"
+  },
+  {
+    "n_samples": 10815,
+    "n_positive": 127,
+    "n_negative": 10688,
+    "timestamp": "2026-03-06T23:44:53.393318"
+  },
+  {
+    "n_samples": 10766,
+    "n_positive": 127,
+    "n_negative": 10639,
+    "timestamp": "2026-03-06T23:58:10.863043"
+  },
+  {
+    "n_samples": 10766,
+    "n_positive": 127,
+    "n_negative": 10639,
+    "timestamp": "2026-03-07T00:04:05.992979"
+  },
+  {
+    "n_samples": 10787,
+    "n_positive": 146,
+    "n_negative": 10641,
+    "timestamp": "2026-03-07T00:31:26.250077"
+  },
+  {
+    "n_samples": 13293,
+    "n_positive": 148,
+    "n_negative": 13145,
+    "timestamp": "2026-03-08T02:58:30.580137"
+  },
+  {
+    "n_samples": 13190,
+    "n_positive": 148,
+    "n_negative": 13042,
+    "timestamp": "2026-03-08T03:01:48.746269"
+  },
+  {
+    "n_samples": 13240,
+    "n_positive": 148,
+    "n_negative": 13092,
+    "timestamp": "2026-03-18T16:10:03.484906"
+  },
+  {
+    "n_samples": 13240,
+    "n_positive": 148,
+    "n_negative": 13092,
+    "timestamp": "2026-03-18T16:10:43.957082"
+  }
+]

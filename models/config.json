@@ -1,0 +1,1 @@
+{"N_BINS": 50, "N_BANDS": 3, "N_FPB": 4, "N_FEAT": 12, "BOTTLENECK": 64, "unique_classes": ["BYDra", "DSCT", "E", "LPV", "RRL", "RSCVN"], "n_classes": 6}
