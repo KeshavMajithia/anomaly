@@ -124,7 +124,3 @@ anomaly_hunter/
 ## Documentation
 
 See [`PROJECT_DOCUMENT.md`](./PROJECT_DOCUMENT.md) for the full technical narrative: research gap, methodology, Kaggle training, streaming pipeline, self-improvement, LLM integration, and cross-domain applications.
-
-## License
-
-Research use. Part of PhD work in astronomical anomaly detection.
