@@ -46,7 +46,6 @@ set GROQ_API_KEY=your-key-here
 # 2. Install dependencies
 cd anomaly_hunter
 pip install -r requirements.txt
-pip install google-generativeai
 
 # 3. Demo run (~2 min, 50 objects)
 cd backend
